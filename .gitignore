@@ -1,0 +1,9 @@
+# Self
+bin/
+packages/
+release/
+vendor/
+lastversion/
+dist/
+.idea/
+.vscode/
