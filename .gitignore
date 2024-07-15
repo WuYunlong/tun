@@ -23,7 +23,6 @@ Thumbs.db
 
 # 忽略Go依赖管理工具生成的文件
 vendor/
-pkg/
 bin/
 build/
 
