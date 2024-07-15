@@ -1,0 +1,49 @@
+# 忽略编译生成的文件
+*.exe
+*.out
+
+# 忽略IDE或编辑器生成的配置文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+
+# 忽略操作系统生成的文件
+.DS_Store
+Thumbs.db
+
+# 忽略Go编译生成的文件
+*.a
+*.o
+*.obj
+
+# 忽略Go运行时产生的缓存文件
+*.test
+
+# 忽略Go依赖管理工具生成的文件
+vendor/
+pkg/
+bin/
+build/
+
+# 忽略Go测试结果
+test/*.out
+
+# 忽略Go构建的临时文件
+*.tmp
+
+# 忽略Go构建的日志文件
+*.log
+
+# 忽略Go构建的配置文件
+*.ini
+*.lock
+*.toml
+*.yaml
+*.yml
+*.json
+*.xml
+*.env
+*.properties
+*.cnf
