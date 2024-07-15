@@ -7,6 +7,7 @@ import (
 
 type Server struct {
 	ln     net.Listener
+	pm     *ControlManager
 	ctx    context.Context
 	cancel context.CancelFunc
 }
@@ -14,6 +15,7 @@ type Server struct {
 func NewServer() *Server {
 	ts := new(Server)
 	ts.ctx = context.Background()
+	ts.pm = NewControlManager()
 
 	return ts
 }
