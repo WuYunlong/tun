@@ -40,7 +40,6 @@ test/*.out
 *.ini
 *.lock
 *.yaml
-*.yml
 *.json
 *.xml
 *.env
