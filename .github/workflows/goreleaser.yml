@@ -1,10 +1,10 @@
-name: releaser
+name: goreleaser
 
 on:
   workflow_dispatch:
 
 jobs:
-  releaser:
+  goreleaser:
     runs-on: ubuntu-latest
     steps:
       - name: 检出代码
