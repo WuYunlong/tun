@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/wuyunlong/tun/pkg/version"
 	"os"
+	"tun/internal/client"
+	"tun/internal/pkg/log"
+	"tun/pkg/version"
 )
 
 func main() {
@@ -13,10 +16,12 @@ func main() {
 
 var (
 	showVersion bool
+	token       string
 )
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "show version")
+	rootCmd.PersistentFlags().StringVarP(&token, "token", "t", "", "tunnel token")
 }
 
 var rootCmd = &cobra.Command{
@@ -27,6 +32,12 @@ var rootCmd = &cobra.Command{
 			fmt.Println(version.Full())
 			return nil
 		}
+
+		if token == "" {
+			fmt.Println("请输入 token")
+			return nil
+		}
+
 		if err := runClient(); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -43,6 +54,8 @@ func Execute() {
 }
 
 func runClient() error {
-	fmt.Println("run client ...")
+	log.InitLogger("console", "info", 3, false)
+	tc := client.NewClient(token)
+	tc.Run(context.Background())
 	return nil
 }

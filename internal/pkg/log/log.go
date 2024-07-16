@@ -2,8 +2,8 @@ package log
 
 import (
 	"bytes"
-	"github.com/wuyunlong/tun/pkg/log"
 	"os"
+	"tun/pkg/log"
 )
 
 var (

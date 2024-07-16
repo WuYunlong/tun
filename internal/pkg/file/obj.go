@@ -27,7 +27,7 @@ type Target struct {
 
 type Client struct {
 	Id          int           `json:"id"`             // id
-	Key         string        `json:"key"`            // 唯一标识
+	Token       string        `json:"token"`          // 唯一标识
 	Remark      string        `json:"remark"`         // 备注
 	Flow        Flow          `json:"flow"`           // 流量
 	Rate        int           `json:"rate,omitempty"` // 限速KB
@@ -35,10 +35,10 @@ type Client struct {
 	sync.RWMutex
 }
 
-func NewClient(key string) *Client {
+func NewClient(token string) *Client {
 	return &Client{
 		Id:          0,
-		Key:         key,
+		Token:       token,
 		Remark:      "",
 		Rate:        0,
 		RateLimiter: nil,

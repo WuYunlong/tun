@@ -2,8 +2,8 @@ package clog
 
 import (
 	"cmp"
-	"github.com/wuyunlong/tun/internal/pkg/log"
 	"slices"
+	"tun/internal/pkg/log"
 )
 
 type LogPrefix struct {

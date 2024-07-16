@@ -1,9 +1,9 @@
 package file
 
 import (
-	"github.com/wuyunlong/tun/pkg/util"
 	"golang.org/x/time/rate"
 	"sync"
+	"tun/pkg/util"
 )
 
 type DBUtils struct {
@@ -33,12 +33,12 @@ func (d *DBUtils) NewClient(c *Client) {
 
 reset:
 
-	if c.Key == "" {
-		c.Key, _ = util.RandID()
+	if c.Token == "" {
+		c.Token, _ = util.RandID()
 	}
 
 	if _, ok := d.JsonDB.Clients.Load(c.Id); ok {
-		c.Key = ""
+		c.Token = ""
 		goto reset
 	}
 
@@ -61,10 +61,10 @@ func (d *DBUtils) NewTunnel(t *Tunnel) {
 	d.JsonDB.SaveTunnels()
 }
 
-func (d *DBUtils) GetIdByKey(k string) (id int, ok bool) {
+func (d *DBUtils) GetIdByToken(token string) (id int, ok bool) {
 	d.JsonDB.Clients.Range(func(key, value any) bool {
 		v := value.(*Client)
-		if v.Key == k {
+		if v.Token == token {
 			id = v.Id
 			ok = true
 			return false

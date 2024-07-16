@@ -38,7 +38,6 @@ test/*.out
 # 忽略Go构建的配置文件
 *.ini
 *.lock
-*.toml
 *.yaml
 *.yml
 *.json

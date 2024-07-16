@@ -1,4 +1,8 @@
 package server
 
-type ControlSession struct {
+import "net"
+
+type SessionContext struct {
+	Conn  net.Conn
+	Token string
 }
