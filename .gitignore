@@ -25,6 +25,7 @@ Thumbs.db
 vendor/
 bin/
 build/
+release/
 
 # 忽略Go测试结果
 test/*.out

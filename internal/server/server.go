@@ -164,7 +164,6 @@ func (ts *Server) handleConnection(ctx context.Context, conn net.Conn) {
 		err = ts.RegisterControl(conn, m)
 		if err != nil {
 			cl.Warnf("register control error: %v", err)
-			fmt.Println(util.GenerateResponseErrorString("register control error", err, ts.cfg.SendErrorToClient))
 			_ = msg.WriteMsg(conn, &msg.LoginResp{
 				Version: version.Full(),
 				Error:   util.GenerateResponseErrorString("register control error", err, ts.cfg.SendErrorToClient),

@@ -53,8 +53,6 @@ func (s *JsonDB) LoadClients() {
 	for _, post := range posts {
 		if post.Rate > 0 {
 			post.RateLimiter = rate.NewLimiter(rate.Limit(post.Rate), post.Rate)
-		} else {
-			post.RateLimiter = rate.NewLimiter(rate.Limit(2<<32), 2<<32)
 		}
 
 		s.Clients.Store(post.Id, post)

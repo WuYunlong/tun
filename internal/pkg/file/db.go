@@ -44,8 +44,6 @@ reset:
 
 	if c.Rate > 0 {
 		c.RateLimiter = rate.NewLimiter(rate.Limit(c.Rate), c.Rate)
-	} else {
-		c.RateLimiter = rate.NewLimiter(rate.Limit(2<<32), 2<<32)
 	}
 
 	d.JsonDB.Clients.Store(c.Id, c)
