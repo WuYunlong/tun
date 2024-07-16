@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/wuyunlong/tun/pkg/version"
 	"os"
 	"tun/internal/config"
 	"tun/internal/pkg/common"
 	"tun/internal/pkg/log"
 	"tun/internal/server"
+	"tun/pkg/version"
 )
 
 func main() {

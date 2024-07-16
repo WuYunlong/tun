@@ -4,7 +4,6 @@ go 1.22.4
 
 require (
 	github.com/spf13/cobra v1.8.1
-	github.com/wuyunlong/tun v0.0.0-20240716030440-27ec2dd34c70
 	golang.org/x/time v0.5.0
 	gopkg.in/yaml.v3 v3.0.1
 )
