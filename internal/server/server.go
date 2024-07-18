@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 	"tun/internal/config"
 	"tun/internal/pkg/clog"
@@ -14,16 +16,18 @@ import (
 	"tun/internal/pkg/log"
 	"tun/internal/pkg/msg"
 	"tun/internal/pkg/util"
+	"tun/internal/server/proxy"
 	"tun/pkg/tmux"
 	"tun/pkg/version"
 )
 
 type Server struct {
-	ln     net.Listener
-	pm     *ControlManager
-	cfg    *config.ServerConfig
-	ctx    context.Context
-	cancel context.CancelFunc
+	ln      net.Listener
+	pm      *ControlManager
+	cfg     *config.ServerConfig
+	ctx     context.Context
+	cancel  context.CancelFunc
+	RunList *sync.Map
 }
 
 func NewServer(cfg *config.ServerConfig) (ts *Server, err error) {
@@ -183,4 +187,51 @@ func (ts *Server) stop() {
 		ts.ln.Close()
 		ts.ln = nil
 	}
+}
+
+// TODO 启动隧道
+func (ts *Server) StartTunnel(id int) error {
+	if t, err := file.GetDB().GetTunnel(id); err != nil {
+		return err
+	} else {
+		if err = ts.AddTunnel(t); err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+func (ts *Server) AddTunnel(t *file.Tunnel) (err error) {
+	// 01 检查端口是否被占用了
+
+	// 02 启动获取服务
+	if svr := ts.NewMode(t); svr != nil {
+		log.Infof("tunnel %s start mode：%s port %d", t.Remark, t.Mode, t.Port)
+		ts.RunList.Store(t.Id, svr)
+		go func() {
+			if err = svr.Start(); err != nil {
+				log.Errorf("clientId %d taskId %d start error %s", t.Client.Id, t.Id, err)
+				ts.RunList.Delete(t.Id)
+				return
+			}
+		}()
+	} else {
+		return errors.New("the mode is not correct")
+	}
+	return nil
+}
+
+func (ts *Server) NewMode(t *file.Tunnel) proxy.Service {
+	var service proxy.Service
+	switch t.Mode {
+	case "tcp":
+		log.Infof("tcp")
+	case "udp":
+		log.Infof("udp")
+	case "webServer":
+		log.Infof("webServer")
+	default:
+		log.Errorf("unknow mode [%s]", t.Mode)
+	}
+	return service
 }

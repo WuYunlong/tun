@@ -1,6 +1,7 @@
 package file
 
 import (
+	"errors"
 	"golang.org/x/time/rate"
 	"sync"
 	"tun/pkg/util"
@@ -69,6 +70,15 @@ func (d *DBUtils) GetIdByToken(token string) (id int, ok bool) {
 		}
 		return true
 	})
+	return
+}
+
+func (d *DBUtils) GetTunnel(id int) (t *Tunnel, err error) {
+	if v, ok := d.JsonDB.Tunnels.Load(id); ok {
+		t = v.(*Tunnel)
+		return
+	}
+	err = errors.New("tunnel not found")
 	return
 }
 

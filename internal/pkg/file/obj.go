@@ -3,6 +3,7 @@ package file
 import (
 	"golang.org/x/time/rate"
 	"sync"
+	"sync/atomic"
 )
 
 type Flow struct {
@@ -26,12 +27,15 @@ type Target struct {
 }
 
 type Client struct {
-	Id          int           `json:"id"`             // id
-	Token       string        `json:"token"`          // 唯一标识
-	Remark      string        `json:"remark"`         // 备注
-	Flow        Flow          `json:"flow"`           // 流量
-	Rate        int           `json:"rate,omitempty"` // 限速KB
-	RateLimiter *rate.Limiter `json:"-"`              // 限速器
+	Id          int           `json:"id"`                 // id
+	Token       string        `json:"token"`              // 唯一标识
+	Remark      string        `json:"remark"`             // 备注
+	Flow        Flow          `json:"flow"`               // 流量
+	Rate        int           `json:"rate,omitempty"`     // 限速KB
+	Version     string        `json:"version,omitempty"`  // 客户端版本号
+	MaxConn     int           `json:"max_conn,omitempty"` // 最大连接数
+	NowConn     int32         `json:"now_conn,omitempty"` // 当前连接数
+	RateLimiter *rate.Limiter `json:"-"`                  // 限速器
 	sync.RWMutex
 }
 
@@ -46,8 +50,70 @@ func NewClient(token string) *Client {
 	}
 }
 
+func (c *Client) CutConn() {
+	atomic.AddInt32(&c.NowConn, 1)
+}
+
+func (c *Client) AddConn() {
+	atomic.AddInt32(&c.NowConn, -1)
+}
+
+func (c *Client) GetConn() bool {
+	if c.MaxConn == 0 || int(c.NowConn) < c.MaxConn {
+		c.CutConn()
+		return true
+	}
+	return false
+}
+
+func (c *Client) HasTunnel(t *Tunnel) (exist bool) {
+	GetDB().JsonDB.Tunnels.Range(func(key, value interface{}) bool {
+		v := value.(*Tunnel)
+		if v.Client.Id == t.Id {
+			exist = true
+			return false
+		}
+		return true
+	})
+	return
+}
+
+func (c *Client) HasHost(h *Host) (exist bool) {
+	GetDB().JsonDB.Hosts.Range(func(key, value any) bool {
+		v := value.(*Host)
+		if v.Client.Id == h.Id {
+			exist = true
+			return false
+		}
+		return true
+	})
+
+	return
+}
+
+func (c *Client) GetTunnelNum() (num int) {
+	GetDB().JsonDB.Tunnels.Range(func(key, value any) bool {
+		v := value.(*Tunnel)
+		if v.Client.Id == c.Id {
+			num++
+		}
+		return true
+	})
+
+	GetDB().JsonDB.Hosts.Range(func(key, value any) bool {
+		v := value.(*Host)
+		if v.Client.Id == c.Id {
+			num++
+		}
+		return true
+	})
+	return
+}
+
 type Tunnel struct {
 	Id     int     `json:"id,omitempty"`
+	Mode   string  `json:"mode,omitempty"`
+	Port   int     `json:"port,omitempty"`
 	Remark string  `json:"remark,omitempty"`
 	Target Target  `json:"target,omitempty"`
 	Client *Client `json:"client,omitempty"`

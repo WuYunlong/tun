@@ -3,7 +3,6 @@ package conn
 import (
 	"context"
 	"net"
-	"tun/internal/pkg/clog"
 )
 
 type ContextConn struct {
@@ -29,9 +28,11 @@ func NewContextFromConn(conn net.Conn) context.Context {
 	return context.Background()
 }
 
-func NewLogFromConn(conn net.Conn) *clog.Logger {
-	if c, ok := conn.(ContextGetter); ok {
-		return clog.FromContextSafe(c.Context())
-	}
-	return clog.New()
+type Conn struct {
+	Conn net.Conn
+	Rb   []byte
+}
+
+func NewConn(conn net.Conn) *Conn {
+	return &Conn{Conn: conn}
 }
