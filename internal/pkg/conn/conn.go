@@ -2,6 +2,8 @@ package conn
 
 import (
 	"context"
+	"errors"
+	"io"
 	"net"
 	"time"
 )
@@ -29,51 +31,57 @@ func NewContextFromConn(conn net.Conn) context.Context {
 	return context.Background()
 }
 
-type Conn struct {
-	Conn net.Conn
-	Rb   []byte
+type WrapReadWriteCloserConn struct {
+	io.ReadWriteCloser
+	underConn  net.Conn
+	remoteAddr net.Addr
 }
 
-func NewConn(conn net.Conn) *Conn {
-	return &Conn{Conn: conn}
-}
-
-func (c *Conn) Read(b []byte) (n int, err error) {
-	if c.Rb != nil {
-		if len(c.Rb) > 0 {
-			n = copy(b, c.Rb)
-			c.Rb = c.Rb[n:]
-			return
-		}
-		c.Rb = nil
+func WrapReadWriteCloserToConn(rwc io.ReadWriteCloser, underConn net.Conn) *WrapReadWriteCloserConn {
+	return &WrapReadWriteCloserConn{
+		ReadWriteCloser: rwc,
+		underConn:       underConn,
 	}
-	return c.Conn.Read(b)
 }
 
-func (c *Conn) Write(b []byte) (n int, err error) {
-	return c.Conn.Write(b)
+func (w *WrapReadWriteCloserConn) LocalAddr() net.Addr {
+	if w.underConn != nil {
+		return w.underConn.LocalAddr()
+	}
+	return (*net.TCPAddr)(nil)
 }
 
-func (c *Conn) Close() error {
-	return c.Conn.Close()
+func (w *WrapReadWriteCloserConn) SetRemoteAddr(addr net.Addr) {
+	w.remoteAddr = addr
 }
 
-func (c *Conn) LocalAddr() net.Addr {
-	return c.Conn.LocalAddr()
+func (w *WrapReadWriteCloserConn) RemoteAddr() net.Addr {
+	if w.remoteAddr != nil {
+		return w.remoteAddr
+	}
+	if w.underConn != nil {
+		return w.underConn.RemoteAddr()
+	}
+	return (*net.TCPAddr)(nil)
 }
 
-func (c *Conn) RemoteAddr() net.Addr {
-	return c.Conn.RemoteAddr()
+func (w *WrapReadWriteCloserConn) SetDeadline(t time.Time) error {
+	if w.underConn != nil {
+		return w.underConn.SetDeadline(t)
+	}
+	return &net.OpError{Op: "set", Net: "wrap", Source: nil, Addr: nil, Err: errors.New("deadline not supported")}
 }
 
-func (c *Conn) SetDeadline(t time.Time) error {
-	return c.Conn.SetDeadline(t)
+func (w *WrapReadWriteCloserConn) SetReadDeadline(t time.Time) error {
+	if w.underConn != nil {
+		return w.underConn.SetReadDeadline(t)
+	}
+	return &net.OpError{Op: "set", Net: "wrap", Source: nil, Addr: nil, Err: errors.New("deadline not supported")}
 }
 
-func (c *Conn) SetReadDeadline(t time.Time) error {
-	return c.Conn.SetReadDeadline(t)
-}
-
-func (c *Conn) SetWriteDeadline(t time.Time) error {
-	return c.Conn.SetWriteDeadline(t)
+func (w *WrapReadWriteCloserConn) SetWriteDeadline(t time.Time) error {
+	if w.underConn != nil {
+		return w.underConn.SetWriteDeadline(t)
+	}
+	return &net.OpError{Op: "set", Net: "wrap", Source: nil, Addr: nil, Err: errors.New("deadline not supported")}
 }

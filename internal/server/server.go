@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -22,19 +21,29 @@ import (
 )
 
 type Server struct {
-	ln      net.Listener
-	pm      *ControlManager
-	cfg     *config.ServerConfig
-	ctx     context.Context
-	cancel  context.CancelFunc
-	RunList *sync.Map
+	ln          net.Listener
+	pm          *proxy.Manager
+	cm          *ControlManager
+	cfg         *config.ServerConfig
+	ctx         context.Context
+	cancel      context.CancelFunc
+	OpenClient  chan int
+	CloseClient chan int
+	OpenTunnel  chan *file.Tunnel
+	CloseTunnel chan *file.Tunnel
+	RunList     sync.Map
 }
 
 func NewServer(cfg *config.ServerConfig) (ts *Server, err error) {
 	ts = &Server{
-		ctx: context.Background(),
-		pm:  NewControlManager(),
-		cfg: cfg,
+		ctx:         context.Background(),
+		pm:          proxy.NewManager(),
+		cm:          NewControlManager(),
+		cfg:         cfg,
+		OpenClient:  make(chan int),
+		CloseClient: make(chan int),
+		OpenTunnel:  make(chan *file.Tunnel),
+		CloseTunnel: make(chan *file.Tunnel),
 	}
 
 	address := net.JoinHostPort(cfg.BindAddr, strconv.Itoa(cfg.BindPort))
@@ -49,9 +58,29 @@ func NewServer(cfg *config.ServerConfig) (ts *Server, err error) {
 
 func (ts *Server) Run(ctx context.Context) {
 	ts.ctx, ts.cancel = context.WithCancel(ctx)
+	// 启动所有隧道
+	go ts.InitFromFile()
+	// go ts.DealTunnel()
+
 	ts.HandleListener(ts.ln)
+
 	<-ts.ctx.Done()
-	ts.stop()
+
+	if ts.ln != nil {
+		ts.Close()
+	}
+}
+
+func (ts *Server) Close() error {
+	if ts.ln != nil {
+		ts.ln.Close()
+		ts.ln = nil
+	}
+	ts.cm.Close()
+	if ts.cancel != nil {
+		ts.cancel()
+	}
+	return nil
 }
 
 func (ts *Server) HandleListener(ln net.Listener) {
@@ -66,6 +95,7 @@ func (ts *Server) HandleListener(ln net.Listener) {
 		cl := clog.New()
 		ctx := context.Background()
 		c = conn.NewContextConn(clog.NewContext(ctx, cl), c)
+
 		go func(ctx context.Context, tunConn net.Conn) {
 			tmuxCnf := tmux.DefaultConfig()
 			tmuxCnf.KeepAliveInterval = time.Duration(10) * time.Second
@@ -119,18 +149,23 @@ func (ts *Server) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login) error {
 		return fmt.Errorf("unexpected error when creating new controller")
 	}
 
-	if o := ts.pm.Add(loginMsg.Token, ctl); o != nil {
+	if o := ts.cm.Add(loginMsg.Token, ctl); o != nil {
 		o.WaitClosed()
 	}
 
 	ctl.Start()
+
+	go func() {
+		ctl.WaitClosed()
+		ts.cm.Del(loginMsg.Token, ctl)
+	}()
 
 	return nil
 }
 
 func (ts *Server) RegisterWorkConn(workConn net.Conn, newMsg *msg.NewWorkConn) error {
 	// log := conn.NewLogFromConn(workConn)
-	c, exist := ts.pm.GetByToken(newMsg.Token)
+	c, exist := ts.cm.GetByToken(newMsg.Token)
 	if !exist {
 		log.Warnf("No client control found for run id [%s]", newMsg.Token)
 		return fmt.Errorf("no client control found for run id [%s]", newMsg.Token)
@@ -182,56 +217,48 @@ func (ts *Server) handleConnection(ctx context.Context, conn net.Conn) {
 	}
 }
 
-func (ts *Server) stop() {
-	if ts.ln != nil {
-		ts.ln.Close()
-		ts.ln = nil
+// TODO 测试内容
+func (ts *Server) GetWorkConn(token string) (workConn net.Conn, err error) {
+	c, ok := ts.cm.GetByToken(token)
+	if !ok {
+		return nil, fmt.Errorf("no client control found for run id [%s]", token)
 	}
+	// 获取工作链接
+	workConn, err = c.GetWorkConn()
+	return
 }
 
-// TODO 启动隧道
-func (ts *Server) StartTunnel(id int) error {
-	if t, err := file.GetDB().GetTunnel(id); err != nil {
+func (ts *Server) RunTunnel(t *file.Tunnel) (err error) {
+	pxy, err := proxy.NewProxy(t, ts.GetWorkConn)
+	if err != nil {
 		return err
-	} else {
-		if err = ts.AddTunnel(t); err != nil {
-			return err
-		}
-		return nil
 	}
-}
 
-func (ts *Server) AddTunnel(t *file.Tunnel) (err error) {
-	// 01 检查端口是否被占用了
-
-	// 02 启动获取服务
-	if svr := ts.NewMode(t); svr != nil {
-		log.Infof("tunnel %s start mode：%s port %d", t.Remark, t.Mode, t.Port)
-		ts.RunList.Store(t.Id, svr)
-		go func() {
-			if err = svr.Start(); err != nil {
-				log.Errorf("clientId %d taskId %d start error %s", t.Client.Id, t.Id, err)
-				ts.RunList.Delete(t.Id)
-				return
-			}
-		}()
+	if t.Mode == "http" {
+		ts.pm.SetHttp(pxy)
+	} else if t.Mode == "https" {
+		ts.pm.SetHttps(pxy)
 	} else {
-		return errors.New("the mode is not correct")
+		ts.pm.Add(t.Id, pxy)
 	}
+
+	remoteAddr, err := pxy.Run()
+	if err != nil {
+		return err
+	}
+	log.Infof("tunnel %s start mode：%s port %d addr %s", t.Remark, t.Mode, t.Port, remoteAddr)
 	return nil
 }
 
-func (ts *Server) NewMode(t *file.Tunnel) proxy.Service {
-	var service proxy.Service
-	switch t.Mode {
-	case "tcp":
-		log.Infof("tcp")
-	case "udp":
-		log.Infof("udp")
-	case "webServer":
-		log.Infof("webServer")
-	default:
-		log.Errorf("unknow mode [%s]", t.Mode)
-	}
-	return service
+// TODO 启动隧道
+func (ts *Server) InitFromFile() {
+	ts.RunTunnel(&file.Tunnel{Id: 0, ClientId: 0, Mode: "http", Port: 80})
+	ts.RunTunnel(&file.Tunnel{Id: 0, ClientId: 0, Mode: "https", Port: 443})
+
+	file.GetDB().JsonDB.Tunnels.Range(func(key, value any) bool {
+		v := value.(*file.Tunnel)
+		ts.RunTunnel(v)
+		return true
+	})
+
 }

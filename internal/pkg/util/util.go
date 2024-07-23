@@ -1,5 +1,7 @@
 package util
 
+import "fmt"
+
 func GenerateResponseErrorString(summary string, err error, detailed bool) string {
 	if detailed {
 		return err.Error()
@@ -18,4 +20,15 @@ func GenerateErrorString(err error) string {
 		str = v
 	}
 	return str
+}
+
+func PanicToError(fn func()) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic error: %v", r)
+		}
+	}()
+
+	fn()
+	return
 }

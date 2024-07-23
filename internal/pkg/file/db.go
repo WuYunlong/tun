@@ -73,6 +73,15 @@ func (d *DBUtils) GetIdByToken(token string) (id int, ok bool) {
 	return
 }
 
+func (d *DBUtils) GetClient(id int) (c *Client, err error) {
+	if v, ok := d.JsonDB.Clients.Load(id); ok {
+		c = v.(*Client)
+		return
+	}
+	err = errors.New("client not found")
+	return
+}
+
 func (d *DBUtils) GetTunnel(id int) (t *Tunnel, err error) {
 	if v, ok := d.JsonDB.Tunnels.Load(id); ok {
 		t = v.(*Tunnel)

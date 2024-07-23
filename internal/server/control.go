@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"runtime/debug"
 	"sync"
+	"time"
 	"tun/internal/pkg/clog"
 	"tun/internal/pkg/msg"
 	"tun/pkg/version"
@@ -68,6 +70,42 @@ func (c *Control) RegisterWorkConn(conn net.Conn) error {
 		log.Debugf("work connection pool is full, discarding")
 		return fmt.Errorf("work connection pool is full, discarding")
 	}
+}
+
+func (c *Control) GetWorkConn() (workConn net.Conn, err error) {
+	defer func() {
+		if errRes := recover(); errRes != nil {
+			c.log.Errorf("panic error: %v", err)
+			c.log.Errorf(string(debug.Stack()))
+		}
+	}()
+	var ok bool
+	select {
+	case workConn, ok = <-c.workConnCh:
+		if !ok {
+			err = errors.New("control is closed")
+			return
+		}
+		c.log.Debugf("get work connection from pool")
+	default:
+		if err = c.msgDispatcher.Send(&msg.ReqWorkConn{}); err != nil {
+			return nil, fmt.Errorf("control is already closed")
+		}
+		select {
+		case workConn, ok = <-c.workConnCh:
+			if !ok {
+				err = errors.New("control is closed")
+				c.log.Warnf("no work connections available, %v", err)
+				return
+			}
+		case <-time.After(10 * time.Second):
+			err = fmt.Errorf("timeout trying to get work connection")
+			c.log.Warnf("%v", err)
+			return
+		}
+	}
+	_ = c.msgDispatcher.Send(&msg.ReqWorkConn{})
+	return
 }
 
 func (c *Control) Replaced(newCtl *Control) {

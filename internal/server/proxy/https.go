@@ -1,16 +1,22 @@
 package proxy
 
-type HttpsServer struct {
+func init() {
+	RegisterProxyFactory("https", NewHttpsProxy)
 }
 
-func NewHttpsServer() *HttpsServer {
-	return &HttpsServer{}
+type HttpsProxy struct {
+	*BaseProxy
 }
 
-func (https *HttpsServer) Start() error {
-	return nil
+func NewHttpsProxy(baseProxy *BaseProxy) Proxy {
+	return &HttpsProxy{
+		BaseProxy: baseProxy,
+	}
 }
 
-func (https *HttpsServer) Close() error {
-	return nil
+func (https *HttpsProxy) Run() (remoteAddr string, err error) {
+	return
+}
+
+func (https *HttpsProxy) Close() {
 }

@@ -69,7 +69,7 @@ func (c *Client) GetConn() bool {
 func (c *Client) HasTunnel(t *Tunnel) (exist bool) {
 	GetDB().JsonDB.Tunnels.Range(func(key, value interface{}) bool {
 		v := value.(*Tunnel)
-		if v.Client.Id == t.Id {
+		if v.ClientId == t.Id {
 			exist = true
 			return false
 		}
@@ -81,7 +81,7 @@ func (c *Client) HasTunnel(t *Tunnel) (exist bool) {
 func (c *Client) HasHost(h *Host) (exist bool) {
 	GetDB().JsonDB.Hosts.Range(func(key, value any) bool {
 		v := value.(*Host)
-		if v.Client.Id == h.Id {
+		if v.ClientId == h.Id {
 			exist = true
 			return false
 		}
@@ -94,7 +94,7 @@ func (c *Client) HasHost(h *Host) (exist bool) {
 func (c *Client) GetTunnelNum() (num int) {
 	GetDB().JsonDB.Tunnels.Range(func(key, value any) bool {
 		v := value.(*Tunnel)
-		if v.Client.Id == c.Id {
+		if v.ClientId == c.Id {
 			num++
 		}
 		return true
@@ -102,7 +102,7 @@ func (c *Client) GetTunnelNum() (num int) {
 
 	GetDB().JsonDB.Hosts.Range(func(key, value any) bool {
 		v := value.(*Host)
-		if v.Client.Id == c.Id {
+		if v.ClientId == c.Id {
 			num++
 		}
 		return true
@@ -111,17 +111,22 @@ func (c *Client) GetTunnelNum() (num int) {
 }
 
 type Tunnel struct {
-	Id     int     `json:"id,omitempty"`
-	Mode   string  `json:"mode,omitempty"`
-	Port   int     `json:"port,omitempty"`
-	Remark string  `json:"remark,omitempty"`
-	Target Target  `json:"target,omitempty"`
-	Client *Client `json:"client,omitempty"`
+	Id       int     `json:"id,omitempty"`
+	Mode     string  `json:"mode,omitempty"`
+	Port     int     `json:"port,omitempty"`
+	Remark   string  `json:"remark,omitempty"`
+	Target   Target  `json:"target,omitempty"`
+	Client   *Client `json:"-"`
+	ClientId int     `json:"client_id,omitempty"`
 }
 
 type Host struct {
-	Id     int     `json:"id,omitempty"`
-	Remark string  `json:"remark,omitempty"`
-	Target Target  `json:"target,omitempty"`
-	Client *Client `json:"client,omitempty"`
+	Id       int     `json:"id,omitempty"`
+	Mode     string  `json:"mode,omitempty"`
+	Host     string  `json:"host,omitempty"`
+	Remark   string  `json:"remark,omitempty"`
+	Target   Target  `json:"target,omitempty"`
+	Client   *Client `json:"-"`
+	ClientId int     `json:"client_id,omitempty"`
+	IsClose  bool    `json:"is_close,omitempty"`
 }

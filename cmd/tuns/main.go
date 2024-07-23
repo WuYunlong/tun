@@ -62,7 +62,6 @@ func Execute() {
 func runServer() error {
 	// 初始化配置
 	cfg := config.LoadServerConfig(configFile)
-	fmt.Println(cfg.Log.Level)
 	// 初始化日志
 	log.InitLogger(cfg.Log.To, cfg.Log.Level, cfg.Log.MaxDays, cfg.Log.DisableLogColor)
 	// 初始化服务

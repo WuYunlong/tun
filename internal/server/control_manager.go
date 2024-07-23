@@ -8,9 +8,9 @@ type ControlManager struct {
 }
 
 func NewControlManager() *ControlManager {
-	pm := new(ControlManager)
-	pm.ctls = make(map[string]*Control)
-	return pm
+	cm := new(ControlManager)
+	cm.ctls = make(map[string]*Control)
+	return cm
 }
 
 func (cm *ControlManager) Add(token string, c *Control) (old *Control) {
@@ -33,6 +33,17 @@ func (cm *ControlManager) Del(token string, c *Control) {
 		o.Close()
 		delete(cm.ctls, token)
 	}
+}
+
+func (cm *ControlManager) Close() error {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	for _, c := range cm.ctls {
+		c.Close()
+	}
+	cm.ctls = make(map[string]*Control)
+	return nil
 }
 
 func (cm *ControlManager) GetByToken(token string) (c *Control, ok bool) {

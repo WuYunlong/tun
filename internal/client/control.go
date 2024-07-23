@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 	"tun/internal/pkg/clog"
+	"tun/internal/pkg/conn"
 	"tun/internal/pkg/msg"
 )
 
@@ -72,20 +73,30 @@ func (c *Control) handleReqWorkConn(_ msg.Message) {
 		return
 	}
 
-	var startMsg msg.StartWorkConn
-	if err = msg.ReadMsgInto(workConn, &startMsg); err != nil {
+	var startWorkConn msg.StartWorkConn
+	if err = msg.ReadMsgInto(workConn, &startWorkConn); err != nil {
 		log.Tracef("work connection closed before response StartWorkConn message: %v", err)
 		workConn.Close()
 		return
 	}
 
-	if startMsg.Error != "" {
-		log.Warnf("start new connection to server error: %v", startMsg.Error)
+	if startWorkConn.Error != "" {
+		log.Warnf("start new connection to server error: %v", startWorkConn.Error)
 		workConn.Close()
 		return
 	}
 
-	// 开始对接
+	// TODO 转发数据
+
+	dial, err := net.Dial("tcp", startWorkConn.Target)
+	if err != nil {
+		log.Errorf("connect local [%s] error ...", startWorkConn.Target)
+		return
+	}
+	inCount, outCount, _ := conn.Join(dial, workConn)
+	log.Infof("use flow in [%d] out [%d]", inCount, outCount)
+	defer dial.Close()
+	defer workConn.Close()
 }
 
 func (c *Control) connectServer() (net.Conn, error) {

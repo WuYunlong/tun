@@ -71,7 +71,7 @@ func (s *JsonDB) LoadTunnels() {
 	json.Unmarshal(bytes, &posts)
 
 	for _, post := range posts {
-		if post.Client, err = s.GetClient(post.Client.Id); err != nil {
+		if post.Client, err = s.GetClient(post.ClientId); err != nil {
 			return
 		}
 		s.Tunnels.Store(post.Id, post)
@@ -90,7 +90,7 @@ func (s *JsonDB) LoadHosts() {
 	json.Unmarshal(bytes, &posts)
 
 	for _, post := range posts {
-		if post.Client, err = s.GetClient(post.Client.Id); err != nil {
+		if post.Client, err = s.GetClient(post.ClientId); err != nil {
 			return
 		}
 		s.Hosts.Store(post.Id, post)
