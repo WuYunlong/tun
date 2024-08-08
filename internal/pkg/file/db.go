@@ -2,9 +2,11 @@ package file
 
 import (
 	"errors"
-	"golang.org/x/time/rate"
 	"sync"
+
 	"tun/pkg/util"
+
+	"golang.org/x/time/rate"
 )
 
 type DBUtils struct {

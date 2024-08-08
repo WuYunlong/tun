@@ -1,8 +1,10 @@
 package config
 
 import (
-	"gopkg.in/yaml.v3"
 	"os"
+
+	"gopkg.in/yaml.v3"
+
 	"tun/internal/pkg/common"
 	"tun/pkg/util"
 )

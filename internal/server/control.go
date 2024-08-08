@@ -8,6 +8,7 @@ import (
 	"runtime/debug"
 	"sync"
 	"time"
+
 	"tun/internal/pkg/clog"
 	"tun/internal/pkg/msg"
 	"tun/pkg/version"

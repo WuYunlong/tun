@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
+
 	"tun/internal/client"
 	"tun/internal/pkg/log"
 	"tun/pkg/version"
+
+	"github.com/spf13/cobra"
 )
 
 func main() {

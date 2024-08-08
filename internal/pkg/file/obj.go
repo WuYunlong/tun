@@ -1,9 +1,10 @@
 package file
 
 import (
-	"golang.org/x/time/rate"
 	"sync"
 	"sync/atomic"
+
+	"golang.org/x/time/rate"
 )
 
 type Flow struct {

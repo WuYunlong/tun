@@ -3,6 +3,7 @@ package clog
 import (
 	"cmp"
 	"slices"
+
 	"tun/internal/pkg/log"
 )
 

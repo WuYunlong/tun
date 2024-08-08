@@ -3,12 +3,13 @@ package file
 import (
 	"encoding/json"
 	"errors"
-	"golang.org/x/time/rate"
 	"os"
 	"path/filepath"
 	"sort"
 	"sync"
 	"sync/atomic"
+
+	"golang.org/x/time/rate"
 )
 
 type JsonDB struct {
